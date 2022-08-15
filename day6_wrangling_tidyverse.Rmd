@@ -1,0 +1,65 @@
+---
+title: "Day 6 Wrangling Tidyverse"
+author: "Elke Windschitl"
+date: "2022-08-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+
+library(tidyverse)
+library(janitor)
+library(here)
+```
+
+## Read in the WB data files
+
+```{r}
+wb_indicators <- read_csv(here("data", "wb_indicators.csv"), 
+                          na = c("..", ""))
+wb_metadata <- read_csv(here("data", "wb_indicators_metadata.csv"))
+```
+
+This data set as is has years as headers - use pivot longer to fix. The series name has multiple vaiables in the same column - use pivot wider to fix.
+
+## Tidy up my data
+
+### `pivot_longer()` to get years into single column.
+
+```{r}
+wb_indicators_long <- wb_indicators |> 
+  pivot_longer(cols = '2001 [YR2001]':'2020 [YR2020]',
+               names_to = "year", 
+               values_to = "indicator_value")
+```
+
+### `separate()` to clean up years column
+
+```{r}
+wb_clean <- wb_indicators_long |> 
+  separate(col = year,into = c("year", "year_chr"),sep = " ") |> 
+  select(-year_chr, -'Country Code', - 'Series Code') |> 
+  mutate(year = as.numeric(year)) |> 
+  drop_na('Series Name') |> 
+  pivot_wider(names_from = 'Series Name', 
+              values_from = indicator_value) 
+
+# Widen the variables currently trapped in 'Series Name' to be spread across multiple columns, and get the values that populated the columns from 'indicator_value' (piped above)
+
+# Rename the column headers
+
+names(wb_clean) <- c("country", "year", "access_clean_fuels_pp", "access_electricity_pp", "co2_emissions_kt", "fossil_fuel_cons_pct", "water_stress")
+
+# Make a subset for example
+wb_subset <- wb_clean |> 
+  filter(country %in% c("Algeria", "Barbados", "Bulgaria", "Chile"))
+
+# Plot
+ggplot(data = wb_subset, aes(x = year, y = co2_emissions_kt, group = country))  +
+  geom_line(aes(color = country)) +
+  facet_wrap(~country) +
+  theme_minimal() +
+  scale_color_manual(values = c("blue", "teal", "purple", "green"))
+```
+

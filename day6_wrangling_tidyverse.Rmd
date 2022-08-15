@@ -59,7 +59,6 @@ wb_subset <- wb_clean |>
 ggplot(data = wb_subset, aes(x = year, y = co2_emissions_kt, group = country))  +
   geom_line(aes(color = country)) +
   facet_wrap(~country) +
-  theme_minimal() +
-  scale_color_manual(values = c("blue", "teal", "purple", "green"))
+  theme_minimal()
 ```
 
